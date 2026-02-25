@@ -303,7 +303,8 @@ endfunction
   },
 
   { "<leader>e",   group = "Explorer" },
-  { "<leader>ee",  "<cmd>Neotree reveal last left<CR>",             desc = "Toggle Explorer" },
+  { "<leader>ee",  function() Snacks.picker.explorer({ hidden = true, ignored = true }) end, desc = "Explorer" },
+  -- { "<leader>ee",  "<cmd>Neotree reveal last left<CR>",             desc = "Toggle Explorer" },
   { "<leader>ef",  "<cmd>Neotree focus filesystem left reveal<CR>", desc = "Focus Files" },
   { "<leader>eb",  "<cmd>Neotree focus buffers left<CR>",           desc = "Focus Buffers" },
   { "<leader>eg",  "<cmd>Neotree focus git_status left<CR>",        desc = "Focus Git" },
@@ -383,6 +384,9 @@ endfunction
   { "<leader>pN",  function() Snacks.picker.notifications() end,                                             desc = "Notifications" },
   { "<leader>pY",  function() Snacks.picker.lazy() end,                                                      desc = "Lazy plugins" },
   { "<leader>p.",  function() Snacks.picker.resume() end,                                                    desc = "Resume last" },
+
+  { "<leader>u",   group = "UI" },
+  { "<leader>uw",  desc = "Toggle line wrap" },
 })
 
 
@@ -462,3 +466,10 @@ vim.keymap.set('n', 'ytc', '"+y', { desc = "Yank to clipboard" })
 vim.keymap.set('v', 'ytc', '"+y', { desc = "Yank to clipboard" })
 vim.keymap.set('n', 'pfc', '"+p', { desc = "Paste from clipboard" })
 vim.keymap.set('v', 'pfc', '"+p', { desc = "Paste from clipboard" })
+
+-- Toggle wrap mode
+vim.keymap.set('n', '<leader>uw', function()
+  vim.wo.wrap = not vim.wo.wrap
+  local status = vim.wo.wrap and 'enabled' or 'disabled'
+  vim.notify('Wrap ' .. status, vim.log.levels.INFO)
+end, { desc = 'Toggle line wrap' })

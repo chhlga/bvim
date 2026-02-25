@@ -3,6 +3,13 @@ local M = {}
 local ns_id = vim.api.nvim_create_namespace("custom_grid_dashboard")
 local dashboard_buf = nil
 
+-- Store dashboard state for restoration
+local dashboard_state = {
+  win = nil,
+  saved_win_options = {},
+  saved_guicursor = nil,
+}
+
 local logo = {
   [[       █                                                                   ]],
   [[     █▒▒░░██                                                               ]],
@@ -380,16 +387,20 @@ function M.draw()
   
   local current_win = vim.api.nvim_get_current_win()
   
-  local saved_win_options = {
-    number = vim.api.nvim_win_get_option(current_win, "number"),
-    relativenumber = vim.api.nvim_win_get_option(current_win, "relativenumber"),
-    cursorline = vim.api.nvim_win_get_option(current_win, "cursorline"),
-    cursorcolumn = vim.api.nvim_win_get_option(current_win, "cursorcolumn"),
-    signcolumn = vim.api.nvim_win_get_option(current_win, "signcolumn"),
-    foldcolumn = vim.api.nvim_win_get_option(current_win, "foldcolumn"),
-    spell = vim.api.nvim_win_get_option(current_win, "spell"),
-    list = vim.api.nvim_win_get_option(current_win, "list"),
+  -- Store state at module level for restoration
+  dashboard_state.win = current_win
+  -- Store defaults from options.lua for restoration
+  dashboard_state.saved_win_options = {
+    number = true,
+    relativenumber = true,
+    cursorline = true,
+    cursorcolumn = false,
+    signcolumn = "auto",
+    foldcolumn = "0",
+    spell = false,
+    list = false,
   }
+  dashboard_state.saved_guicursor = "n-v-c:block,i-ci-ve:ver25,r-cr:hor20,o:hor50"
   
   vim.api.nvim_win_set_buf(current_win, buf)
   
@@ -437,22 +448,88 @@ function M.draw()
     end
   })
   
+  -- Restore window options when any non-dashboard buffer enters the window
+  local restore_autocmd_id
+  restore_autocmd_id = vim.api.nvim_create_autocmd("BufWinEnter", {
+    callback = function(args)
+      -- If a non-dashboard buffer enters the dashboard window, restore settings
+      local entering_buf = args.buf
+      local win = vim.api.nvim_get_current_win()
+      
+      if entering_buf ~= buf and win == current_win and vim.api.nvim_win_is_valid(win) then
+        for opt, val in pairs(dashboard_state.saved_win_options) do
+          pcall(vim.api.nvim_win_set_option, win, opt, val)
+        end
+        
+        -- Restore global guicursor
+        vim.opt.guicursor = dashboard_state.saved_guicursor
+        
+        -- Remove this autocmd after first trigger
+        if restore_autocmd_id then
+          pcall(vim.api.nvim_del_autocmd, restore_autocmd_id)
+        end
+      end
+    end,
+  })
+  
   vim.api.nvim_create_autocmd("BufLeave", {
     buffer = buf,
     once = true,
     callback = function()
-      local win = vim.api.nvim_get_current_win()
-      
-      for opt, val in pairs(saved_win_options) do
-        if vim.api.nvim_win_is_valid(win) then
-          pcall(vim.api.nvim_win_set_option, win, opt, val)
+      -- Ensure restoration happens even if BufWinEnter didn't fire
+      vim.schedule(function()
+        if vim.api.nvim_win_is_valid(current_win) then
+          local current_buf = vim.api.nvim_win_get_buf(current_win)
+          if current_buf ~= buf then
+            for opt, val in pairs(dashboard_state.saved_win_options) do
+              pcall(vim.api.nvim_win_set_option, current_win, opt, val)
+            end
+          end
         end
-      end
+        
+        -- Always restore guicursor
+        vim.opt.guicursor = dashboard_state.saved_guicursor
+        
+        -- Clean up autocmd if it still exists
+        if restore_autocmd_id then
+          pcall(vim.api.nvim_del_autocmd, restore_autocmd_id)
+        end
+      end)
       
       pcall(vim.api.nvim_buf_delete, buf, { force = true })
       dashboard_buf = nil
     end
   })
+end
+
+-- Restore window settings after session load
+function M.restore_settings()
+  -- Restore settings to all windows
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_is_valid(win) then
+      local buf = vim.api.nvim_win_get_buf(win)
+      local ft = vim.bo[buf].filetype
+      
+      -- Skip dashboard and special filetypes
+      if ft ~= "dashboard" then
+        -- Restore window options
+        for opt, val in pairs(dashboard_state.saved_win_options) do
+          pcall(vim.api.nvim_win_set_option, win, opt, val)
+        end
+        
+        -- Force filetype detection and syntax highlighting
+        vim.api.nvim_buf_call(buf, function()
+          vim.cmd('filetype detect')
+          vim.cmd('syntax on')
+        end)
+      end
+    end
+  end
+  
+  -- Always restore guicursor
+  if dashboard_state.saved_guicursor then
+    vim.opt.guicursor = dashboard_state.saved_guicursor
+  end
 end
 
 function M.open_projects()
@@ -513,6 +590,16 @@ function M.setup(user_layout)
   vim.api.nvim_create_user_command("Dashboard", function()
     M.draw()
   end, {})
+  
+  -- Hook into persistence.nvim's post-load event
+  vim.api.nvim_create_autocmd("User", {
+    pattern = "PersistenceLoadPost",
+    callback = function()
+      vim.schedule(function()
+        M.restore_settings()
+      end)
+    end,
+  })
 end
 
 return M

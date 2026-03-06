@@ -5,30 +5,30 @@ wk.setup({})
 wk.add({
   { "<leader>f",   group = "Find" },
   { "<leader>fe",  function() Snacks.picker.explorer({ layout = { preset = "default", preview = true }, auto_close = true }) end, desc = "Explorer" },
-  { "<leader>ff",  function() Snacks.picker.files({ hidden = true, ignored = true }) end,                                       desc = "Find File" },
-  { "<leader>fg",  function() Snacks.picker.grep({ hidden = true, ignored = true }) end,                                        desc = "Grep Text" },
-  { "<leader>fr",  function() Snacks.picker.recent() end,                                                                       desc = "Recent files" },
-  { "<leader>fb",  function() Snacks.picker.buffers() end,                                                                      desc = "Buffers" },
-  { "<leader>fp",  function() Snacks.picker.projects() end,                                                                     desc = "Projects" },
-  { "<leader>fG",  function() Snacks.picker.grep_buffers() end,                                                                 desc = "Grep buffers" },
-  { "<leader>fn",  "<cmd>ene<CR>",                                                                                              desc = "New File" },
+  { "<leader>ff",  function() Snacks.picker.files({ hidden = true, ignored = true }) end,                                         desc = "Find File" },
+  { "<leader>fg",  function() Snacks.picker.grep({ hidden = true, ignored = true }) end,                                          desc = "Grep Text" },
+  { "<leader>fr",  function() Snacks.picker.recent() end,                                                                         desc = "Recent files" },
+  { "<leader>fb",  function() Snacks.picker.buffers() end,                                                                        desc = "Buffers" },
+  { "<leader>fp",  function() Snacks.picker.projects() end,                                                                       desc = "Projects" },
+  { "<leader>fG",  function() Snacks.picker.grep_buffers() end,                                                                   desc = "Grep buffers" },
+  { "<leader>fn",  "<cmd>ene<CR>",                                                                                                desc = "New File" },
 
   { "<leader>b",   group = "Buffers" },
-  { "<leader>bd",  "<cmd>bdelete<CR>",                                                                                          desc = "Delete buffer" },
-  { "<leader>bp",  "<cmd>BufferLineTogglePin<CR>",                                                                              desc = "Toggle pin" },
-  { "<leader>bf",  function() Snacks.picker.buffers() end,                                                                      desc = "Find buffer" },
-  { "<leader>bb",  "<cmd>BufferLinePick<CR>",                                                                                   desc = "Pick buffer" },
-  { "<leader>bD",  "<cmd>silent! %bdelete<CR>",                                                                                 desc = "Delete all" },
+  { "<leader>bd",  "<cmd>bdelete<CR>",                                                                                            desc = "Delete buffer" },
+  { "<leader>bp",  "<cmd>BufferLineTogglePin<CR>",                                                                                desc = "Toggle pin" },
+  { "<leader>bf",  function() Snacks.picker.buffers() end,                                                                        desc = "Find buffer" },
+  { "<leader>bb",  "<cmd>BufferLinePick<CR>",                                                                                     desc = "Pick buffer" },
+  { "<leader>bD",  "<cmd>silent! %bdelete<CR>",                                                                                   desc = "Delete all" },
   { "<leader>bc",  group = "Close" },
-  { "<leader>bco", "<cmd>BufferLineCloseOthers<CR>",                                                                            desc = "Close others" },
-  { "<leader>bcr", "<cmd>BufferLineCloseRight<CR>",                                                                             desc = "Close right" },
-  { "<leader>bcl", "<cmd>BufferLineCloseLeft<CR>",                                                                              desc = "Close left" },
+  { "<leader>bco", "<cmd>BufferLineCloseOthers<CR>",                                                                              desc = "Close others" },
+  { "<leader>bcr", "<cmd>BufferLineCloseRight<CR>",                                                                               desc = "Close right" },
+  { "<leader>bcl", "<cmd>BufferLineCloseLeft<CR>",                                                                                desc = "Close left" },
 
   { "<leader>g",   group = "Git" },
-  { "<leader>gg",  "<cmd>Git status<CR>",                                                                                       desc = "Status" },
-  { "<leader>gf",  function() Snacks.picker.git_log_file() end,                                                                 desc = "File history" },
+  { "<leader>gg",  "<cmd>Git status<CR>",                                                                                         desc = "Status" },
+  { "<leader>gf",  function() Snacks.picker.git_log_file() end,                                                                   desc = "File history" },
   { "<leader>gb",  group = "Branch" },
-  { "<leader>gbb", function() Snacks.picker.git_branches() end,                                                                 desc = "List branches" },
+  { "<leader>gbb", function() Snacks.picker.git_branches() end,                                                                   desc = "List branches" },
   {
     "<leader>gbn",
     function()
@@ -82,14 +82,166 @@ wk.add({
   { "<leader>gdH", "<cmd>DiffviewFileHistory<CR>",            desc = "Branch history" },
   { "<leader>gdq", "<cmd>DiffviewClose<CR>",                  desc = "Close diffview" },
 
-  { "<leader>c",   group = "Code" },
-  { "<leader>ca",  desc = "Code action" },
-  { "<leader>cr",  desc = "Rename symbol" },
-  { "<leader>cf",  desc = "Format" },
-  { "<leader>cl",  desc = "Run codelens" },
-  { "<leader>cL",  desc = "Refresh codelens" },
-  { "<leader>ch",  desc = "Toggle inlay hints" },
-  { "<leader>co",  desc = "Organize imports" },
+  { "<leader>gu",  group = "GitHub" },
+  {
+    "<leader>gul",
+    function()
+      local lookup = require('github_lookup')
+      local word = vim.fn.expand("<cword>")
+      local line = vim.fn.getline(".")
+      local filename = vim.fn.expand("%:t")
+      local filetype = vim.bo.filetype
+
+      -- Determine package type and name
+      local pkg_type, pkg_name
+
+      -- Check for Gemfile
+      if filename == "Gemfile" or filename:match("%.gemspec$") or filename == "gems.rb" then
+        pkg_name = line:match("gem%s+['\"]([^'\"]+)['\"]")
+        pkg_type = "gem"
+        -- Check for go.mod or .go files
+      elseif filename == "go.mod" or filetype == "go" then
+        pkg_name = line:match("(github%.com/[%w%.%-_/]+)") or word
+        pkg_type = "go"
+        -- Check for package.json
+      elseif filename == "package.json" then
+        pkg_name = line:match('"(@?[%w%.%-_/@]+)"%s*:%s*"')
+        pkg_type = "npm"
+      else
+        -- Fallback: use word under cursor
+        pkg_name = word
+        pkg_type = "unknown"
+      end
+
+      if not pkg_name or pkg_name == "" then
+        vim.notify("No package name found under cursor", vim.log.levels.WARN)
+        return
+      end
+
+      vim.notify("Looking up " .. pkg_name .. "...", vim.log.levels.INFO)
+
+      -- Fetch repo URLs based on package type
+      local fetch_fn
+      if pkg_type == "gem" then
+        fetch_fn = lookup.fetch_gem_repo
+      elseif pkg_type == "npm" then
+        fetch_fn = lookup.fetch_npm_repo
+      elseif pkg_type == "go" then
+        fetch_fn = lookup.fetch_go_repo
+      else
+        vim.notify("Unknown package type. Use <leader>gus to search GitHub directly.", vim.log.levels.WARN)
+        return
+      end
+
+      fetch_fn(pkg_name, function(urls)
+        if not urls or not urls.source then
+          vim.notify("Could not find GitHub repo for " .. pkg_name, vim.log.levels.ERROR)
+          return
+        end
+
+        -- Show Snacks picker with options
+        local items = {}
+
+        if urls.source and urls.source ~= "" then
+          table.insert(items, {
+            text = "📦 Source Code: " .. urls.source,
+            url = urls.source,
+            type = "source"
+          })
+        end
+
+        if urls.homepage and urls.homepage ~= "" and urls.homepage ~= urls.source then
+          table.insert(items, {
+            text = "🏠 Homepage: " .. urls.homepage,
+            url = urls.homepage,
+            type = "homepage"
+          })
+        end
+
+        if urls.docs and urls.docs ~= "" and urls.docs ~= urls.source and urls.docs ~= urls.homepage then
+          table.insert(items, {
+            text = "📚 Documentation: " .. urls.docs,
+            url = urls.docs,
+            type = "docs"
+          })
+        end
+
+        if urls.gem_url then
+          table.insert(items, {
+            text = "💎 RubyGems: " .. urls.gem_url,
+            url = urls.gem_url,
+            type = "registry"
+          })
+        end
+
+        if urls.npm_url then
+          table.insert(items, {
+            text = "📦 NPM: " .. urls.npm_url,
+            url = urls.npm_url,
+            type = "registry"
+          })
+        end
+
+        if urls.pkggo_url then
+          table.insert(items, {
+            text = "🔵 pkg.go.dev: " .. urls.pkggo_url,
+            url = urls.pkggo_url,
+            type = "registry"
+          })
+        end
+
+        if #items == 0 then
+          vim.notify("No URLs found for " .. pkg_name, vim.log.levels.WARN)
+          return
+        end
+
+        -- Show picker
+        Snacks.picker({
+          title = "GitHub Lookup: " .. pkg_name,
+          items = items,
+          format = "text",
+          layout = { preset = "default" },
+          confirm = function(picker, item)
+            picker:close()
+            if item and item.url then
+              vim.fn.system({ "open", item.url })
+            end
+          end,
+        })
+      end)
+    end,
+    desc = "Lookup package on GitHub"
+  },
+  {
+    "<leader>gus",
+    function()
+      local word = vim.fn.expand("<cword>")
+      if word and word ~= "" then
+        local search_url = string.format("https://github.com/search?q=%s&type=repositories", word)
+        vim.fn.system({ "open", search_url })
+      else
+        vim.notify("No word under cursor", vim.log.levels.WARN)
+      end
+    end,
+    desc = "Search GitHub for word"
+  },
+  {
+    "<leader>guo",
+    function()
+      local gx = require('gx')
+      gx.open()
+    end,
+    desc = "Open URL with gx (any URL)"
+  },
+
+  { "<leader>c",  group = "Code" },
+  { "<leader>ca", desc = "Code action" },
+  { "<leader>cr", desc = "Rename symbol" },
+  { "<leader>cf", desc = "Format" },
+  { "<leader>cl", desc = "Run codelens" },
+  { "<leader>cL", desc = "Refresh codelens" },
+  { "<leader>ch", desc = "Toggle inlay hints" },
+  { "<leader>co", desc = "Organize imports" },
   {
     "<leader>cd",
     function()
@@ -305,26 +457,26 @@ endfunction
   { "<leader>e",   group = "Explorer" },
   { "<leader>ee",  function() Snacks.picker.explorer({ hidden = true, ignored = true }) end, desc = "Explorer" },
   -- { "<leader>ee",  "<cmd>Neotree reveal last left<CR>",             desc = "Toggle Explorer" },
-  { "<leader>ef",  "<cmd>Neotree focus filesystem left reveal<CR>", desc = "Focus Files" },
-  { "<leader>eb",  "<cmd>Neotree focus buffers left<CR>",           desc = "Focus Buffers" },
-  { "<leader>eg",  "<cmd>Neotree focus git_status left<CR>",        desc = "Focus Git" },
-  { "<leader>es",  "<cmd>Neotree focus document_symbols left<CR>",  desc = "Focus Symbols" },
-  { "<leader>en",  "<C-w>w",                                        desc = "Cycle windows" },
-  { "<leader>et",  function() Snacks.terminal() end,                desc = "Toggle Terminal" },
+  { "<leader>ef",  "<cmd>Neotree focus filesystem left reveal<CR>",                          desc = "Focus Files" },
+  { "<leader>eb",  "<cmd>Neotree focus buffers left<CR>",                                    desc = "Focus Buffers" },
+  { "<leader>eg",  "<cmd>Neotree focus git_status left<CR>",                                 desc = "Focus Git" },
+  { "<leader>es",  "<cmd>Neotree focus document_symbols left<CR>",                           desc = "Focus Symbols" },
+  { "<leader>en",  "<C-w>w",                                                                 desc = "Cycle windows" },
+  { "<leader>et",  function() Snacks.terminal() end,                                         desc = "Toggle Terminal" },
 
   { "<leader>q",   group = "Session" },
-  { "<leader>qq",  "<cmd>qa!<CR>",                                  desc = "Quit without saving" },
-  { "<leader>qwq", "<cmd>wa<CR><cmd>qa<CR>",                        desc = "Save all and quit" },
+  { "<leader>qq",  "<cmd>qa!<CR>",                                                           desc = "Quit without saving" },
+  { "<leader>qwq", "<cmd>wa<CR><cmd>qa<CR>",                                                 desc = "Save all and quit" },
 
   { "<leader>t",   group = "Timer" },
   { "<leader>ts",  group = "Session" },
-  { "<leader>ts2", "<cmd>TimerSession default2h<CR>",               desc = "2h focus" },
-  { "<leader>ts1", "<cmd>TimerSession default1h<CR>",               desc = "1h focus" },
-  { "<leader>tsr", "<cmd>TimerSession rest<CR>",                    desc = "Rest" },
+  { "<leader>ts2", "<cmd>TimerSession default2h<CR>",                                        desc = "2h focus" },
+  { "<leader>ts1", "<cmd>TimerSession default1h<CR>",                                        desc = "1h focus" },
+  { "<leader>tsr", "<cmd>TimerSession rest<CR>",                                             desc = "Rest" },
   { "<leader>tt",  group = "Timer" },
-  { "<leader>tts", "<cmd>TimerStop<CR>",                            desc = "Stop" },
-  { "<leader>ttp", "<cmd>TimerPause<CR>",                           desc = "Pause" },
-  { "<leader>ttr", "<cmd>TimerResume<CR>",                          desc = "Resume" },
+  { "<leader>tts", "<cmd>TimerStop<CR>",                                                     desc = "Stop" },
+  { "<leader>ttp", "<cmd>TimerPause<CR>",                                                    desc = "Pause" },
+  { "<leader>ttr", "<cmd>TimerResume<CR>",                                                   desc = "Resume" },
   {
     "<leader>ttc",
     function()
@@ -387,8 +539,10 @@ endfunction
 
   { "<leader>u",   group = "UI" },
   { "<leader>uw",  desc = "Toggle line wrap" },
-})
 
+
+  {"<leader>rr", desc = "Insert return statement" },
+})
 
 vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter", "OptionSet" }, {
   group = vim.api.nvim_create_augroup("WhichKeyDiffOnly", { clear = true }),
@@ -397,10 +551,10 @@ vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter", "OptionSet" }, {
     -- window-local option
     if vim.wo.diff then
       wk.add({
-        { "<leader>d",    group = "Diff" },
-        { "<leader>dgt",  "<cmd>diffget 2<CR>", desc = "Get from left" },
-        { "<leader>dgo",  "<cmd>diffget 3<CR>", desc = "Get from right" },
-        { "<leader>dpt",  "<cmd>diffput 2<CR>", desc = "Put to main" },
+        { "<leader>d",   group = "Diff" },
+        { "<leader>dgt", "<cmd>diffget 2<CR>", desc = "Get from left" },
+        { "<leader>dgo", "<cmd>diffget 3<CR>", desc = "Get from right" },
+        { "<leader>dpt", "<cmd>diffput 2<CR>", desc = "Put to main" },
       })
     else
       -- optional: remove the mapping from this buffer when not in diff
@@ -473,3 +627,8 @@ vim.keymap.set('n', '<leader>uw', function()
   local status = vim.wo.wrap and 'enabled' or 'disabled'
   vim.notify('Wrap ' .. status, vim.log.levels.INFO)
 end, { desc = 'Toggle line wrap' })
+
+vim.keymap.set('n', '<leader>rr', function()
+  local row = vim.api.nvim_win_get_cursor(0)[1]
+  vim.api.nvim_buf_set_lines(0, row, row + 1, false, { "return" })
+end, { desc = "Insert return statement" })

@@ -115,6 +115,25 @@ return {
         root_markers = { '.git' },
       })
 
+      vim.lsp.config('solargraph', {
+        cmd = { 'solargraph', 'stdio' },
+        filetypes = { 'sonicpi' },
+        root_markers = { 'Gemfile', '.ruby-version', '.git' },
+        settings = {
+          solargraph = {
+            diagnostics = true,
+            folding = true,
+            completion = true,
+            symbols = true,
+            definitions = true,
+            references = true,
+            rename = true,
+            hover = true,
+            formatting = true,
+          },
+        },
+      })
+
       vim.lsp.config('ruby_lsp', {
         cmd = { "ruby-lsp" },
         filetypes = { 'ruby', 'eruby' },
@@ -350,6 +369,7 @@ return {
 
       vim.lsp.enable({
         'ruby_lsp',
+        'solargraph',
         'lua_ls',
         'gopls',
         'ts_ls',
@@ -364,6 +384,8 @@ return {
         callback = function(ev)
           local client = vim.lsp.get_client_by_id(ev.data.client_id)
           if not client then return end
+
+          require('sonicpi').lsp_on_init(client, { server_dir = "/Applications/Sonic Pi.app/Contents/Resources/app/server"})
 
           local bufnr = ev.buf
           vim.bo[bufnr].omnifunc = 'v:lua.vim.lsp.omnifunc'

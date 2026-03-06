@@ -1,0 +1,51 @@
+#!/usr/bin/env ruby
+# Test file for SonicPi line highlighter
+# This file demonstrates error highlighting with live_loops
+
+# Simple error case (typo in sleep)
+live_loop :simple_test do
+  sample :bd_haus
+  slep 1  # Typo: should be 'sleep' - line 3 relative to :simple_test
+end
+
+# Nested structure
+live_loop :melody do
+  use_synth :beep
+  play :c4
+  sleep 0.5
+  play :e4
+  slep 0.5  # Typo: line 7 relative to :melody
+end
+
+# Multiple live_loops
+live_loop :bass do
+  use_synth :tb303
+  play :c2, release: 0.2
+  sleep 0.25
+end
+
+live_loop :drums do
+  sample :drum_cymbal_closed
+  sleep 0.125
+  sample :bd_haus
+  sleap 0.125  # Typo: line 5 relative to :drums
+  sample :drum_snare_soft
+  sleep 0.125
+end
+
+# Instructions:
+# 1. Open this file in Neovim
+# 2. Run the code: <leader>r
+# 3. Watch the log buffer for errors
+# 4. The corresponding line in THIS buffer will be highlighted!
+#
+# Expected behavior:
+# - Line 8 (slep in :simple_test) highlights
+# - Line 16 (slep in :melody) highlights  
+# - Line 30 (sleap in :drums) highlights
+#
+# Each highlight will:
+# - Appear when the error is logged
+# - Use the ErrorMsg highlight group (red background by default)
+# - Auto-clear after 3 seconds
+# - Show a notification: "Highlighted line X in buffer Y"

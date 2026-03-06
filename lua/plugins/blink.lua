@@ -1,6 +1,6 @@
 return {
   'saghen/blink.cmp',
-  dependencies = { 'rafamadriz/friendly-snippets', "fang2hou/blink-copilot" },
+  dependencies = { 'rafamadriz/friendly-snippets', "fang2hou/blink-copilot", "saghen/blink.compat" },
   version = '1.*',
 
   opts = {
@@ -68,8 +68,12 @@ return {
     },
 
     sources = {
-      default = { 'lsp', 'path', 'snippets', 'buffer', 'copilot' },
-      providers = {
+      default = { 'lsp', 'path', 'snippets', 'buffer', 'copilot', 'sonicpi' },
+      providers = { -- name of cmp source
+        sonicpi = {
+          name = "sonicpi",
+          module = "blink.compat.source",
+        },
         copilot = {
           name = "copilot",
           module = "blink-copilot",

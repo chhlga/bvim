@@ -629,7 +629,7 @@ return {
           local highlighter = require('sonicpi.highlighter')
 
           remote.startServer()
-          
+
           stream.start({ port = 8765, format = "json" })
           osc_hook.setup()
           highlighter.setup()
@@ -648,7 +648,6 @@ return {
           stream.stop()
         end,
       })
-
     end,
   },
   {
@@ -672,7 +671,47 @@ return {
   },
   -- {
   --   "tidalcycles/vim-tidal",
-  -- }
+  --   dependencies = {
+  --     "mbbill/undotree",
+  --   },
+  --   config = function()
+  --     vim.api.nvim_create_autocmd("FileType", {
+  --       pattern = "tidal",
+  --       callback = function()
+  --         vim.g.tidal_target = "tmux"
+  --         vim.g.tidal_default_config = { socket_name = "default", target_pane = "music:tidal.2" }
+  --         -- vim.g.tidal_no_mappings = 1
+  --         vim.opt_local.shiftwidth = 2
+  --         vim.opt_local.tabstop = 2
+  --         vim.opt_local.expandtab = true
+  --       end,
+  --     })
+  --   end,
+  -- },
+  {
+    "grddavies/tidal.nvim",
+    opts = {
+      mappings = {
+        send_line = { mode = { "i", "n" }, key = "<M-CR>" },
+        send_visual = { mode = { "x" }, key = "<M-CR>" },
+        send_node = { mode = "n", key = "<leader><CR>" },
+        send_hush = { mode = "n", key = "<leader><Esc>" },
+      },
+      -- Your configuration here
+      -- See configuration section for defaults
+    },
+  },
+  {
+    "tpope/vim-repeat",
+    event = "VeryLazy",
+  },
+  {
+    "thgrund/tidal-makros.nvim",
+    config = function()
+      require("makros").setup()
+    end,
+  },
+}
   -- {
   --   "chrishrb/gx.nvim",
   --   event = "VeryLazy",
@@ -701,4 +740,4 @@ return {
   --     gx.handlers.npm = require('gx.handlers.npm')
   --   end,
   -- },
-}
+-- }

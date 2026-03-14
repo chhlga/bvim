@@ -360,7 +360,6 @@ return {
           },
         },
       })
-
       vim.lsp.config('rubocop', {
         cmd = { 'rubocop', '--lsp' },
         filetypes = { 'ruby', 'eruby' },

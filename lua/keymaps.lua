@@ -541,7 +541,64 @@ endfunction
   { "<leader>uw",  desc = "Toggle line wrap" },
 
 
-  {"<leader>rr", desc = "Insert return statement" },
+  { "<leader>rr",  desc = "Insert return statement" },
+
+  -- { "<leader>m",   group = "Music" },
+  -- { "<leader>ms",  "<cmd>TidalParagraphSend<CR>",                                                            desc = "Send paragraph" },
+  -- { "<leader>msl", "<cmd>TidalSend<CR>",                                                                 desc = "Send line" },
+  -- { "<leader>msr", "<cmd>TidalRegionSend<CR>",                                                               desc = "Send region",    mode = { "x" } },
+  -- { "<leader>mh",  "<cmd>TidalHush<CR>",                                                                     desc = "Hush" },
+  -- { "<leader>ms1", "<cmd>TidalPlay 1<CR>",                                                                   desc = "Play 1" },
+  -- { "<leader>ms2", "<cmd>TidalPlay 2<CR>",                                                                   desc = "Play 2" },
+  -- { "<leader>ms3", "<cmd>TidalPlay 3<CR>",                                                                   desc = "Play 3" },
+  -- { "<leader>ms4", "<cmd>TidalPlay 4<CR>",                                                                   desc = "Play 4" },
+  -- { "<leader>ms5", "<cmd>TidalPlay 5<CR>",                                                                   desc = "Play 5" },
+  -- { "<leader>ms6", "<cmd>TidalPlay 6<CR>",                                                                   desc = "Play 6" },
+  -- { "<leader>ms7", "<cmd>TidalPlay 7<CR>",                                                                   desc = "Play 7" },
+  -- { "<leader>ms8", "<cmd>TidalPlay 8<CR>",                                                                   desc = "Play 8" },
+  -- { "<leader>mh1", "<cmd>TidalSilence 1<CR>",                                                                desc = "Silence 1" },
+  -- { "<leader>mh2", "<cmd>TidalSilence 2<CR>",                                                                desc = "Silence 2" },
+  -- { "<leader>mh3", "<cmd>TidalSilence 3<CR>",                                                                desc = "Silence 3" },
+  -- { "<leader>mh4", "<cmd>TidalSilence 4<CR>",                                                                desc = "Silence 4" },
+  -- { "<leader>mh5", "<cmd>TidalSilence 5<CR>",                                                                desc = "Silence 5" },
+  -- { "<leader>mh6", "<cmd>TidalSilence 6<CR>",                                                                desc = "Silence 6" },
+  -- { "<leader>mh7", "<cmd>TidalSilence 7<CR>",                                                                desc = "Silence 7" },
+  -- { "<leader>mh8", "<cmd>TidalSilence 8<CR>",                                                                desc = "Silence 8" },
+  --
+  -- { "<leader>ttp", "<cmd>TimerPause<CR>",                                                    desc = "Pause" },
+
+  -- " if !exists("g:tidal_no_mappings") || !g:tidal_no_mappings
+  -- "   if !hasmapto('<Plug>TidalConfig', 'n')
+  -- "     nmap <buffer> <localleader>c <Plug>TidalConfig
+  -- "   endif
+  -- "
+  -- "   if !hasmapto('<Plug>TidalRegionSend', 'x')
+  -- "     xmap <buffer> <localleader>s  <Plug>TidalRegionSend
+  -- "     xmap <buffer> <c-e> <Plug>TidalRegionSend
+  -- "   endif
+  -- "
+  -- "   if !hasmapto('<Plug>TidalLineSend', 'n')
+  -- "     nmap <buffer> <localleader>s  <Plug>TidalLineSend
+  -- "   endif
+  -- "
+  -- "   if !hasmapto('<Plug>TidalParagraphSend', 'n')
+  -- "     nmap <buffer> <localleader>ss <Plug>TidalParagraphSend
+  -- "     nmap <buffer> <c-e> <Plug>TidalParagraphSend
+  -- "   endif
+  -- "
+  -- "   imap <buffer> <c-e> <Esc><Plug>TidalParagraphSend<Esc>i<Right>
+  -- "
+  -- "   nnoremap <buffer> <localleader>h :TidalHush<cr>
+  -- "   nnoremap <buffer> <c-h> :TidalHush<cr>
+  -- "   let i = 1
+  -- "   while i <= 9
+  -- "     execute 'nnoremap <buffer> <localleader>'.i.'  :TidalSilence '.i.'<cr>'
+  -- "     execute 'nnoremap <buffer> <c-'.i.'>  :TidalSilence '.i.'<cr>'
+  -- "     execute 'nnoremap <buffer> <localleader>s'.i.' :TidalPlay '.i.'<cr>'
+  -- "     let i += 1
+  -- "   endwhile
+  -- " endif
+
 })
 
 vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter", "OptionSet" }, {
@@ -562,7 +619,6 @@ vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter", "OptionSet" }, {
     end
   end,
 })
-
 
 vim.api.nvim_create_autocmd('LspAttach', {
   group = vim.api.nvim_create_augroup('LspKeymaps', { clear = true }),
@@ -632,3 +688,70 @@ vim.keymap.set('n', '<leader>rr', function()
   local row = vim.api.nvim_win_get_cursor(0)[1]
   vim.api.nvim_buf_set_lines(0, row, row + 1, false, { "return" })
 end, { desc = "Insert return statement" })
+
+vim.keymap.set("n", "<leader>[", function()
+  local select = require("tidal.util.select")
+  local block = select.get_block()
+  -- local block_start = block.start[1] + 1
+
+  local channel_number = string.match(block.lines[1], "d(%d+)")
+
+  local message = require("tidal.core.message")
+
+  if channel_number then
+    message.tidal.send_line(string.format("d%d silence", channel_number))
+  else
+    require('tidal').api.send_silence()
+  end
+end, { desc = "send silence" })
+
+vim.keymap.set("n", "<leader>]", function()
+  require('tidal').api.send_block()
+end, { desc = "send block" })
+
+local note_map = {
+  C = 0,
+  ["C#"] = 1,
+  Db = 1,
+  D = 2,
+  ["D#"] = 3,
+  Eb = 3,
+  E = 4,
+  F = 5,
+  ["F#"] = 6,
+  Gb = 6,
+  G = 7,
+  ["G#"] = 8,
+  Ab = 8,
+  A = 9,
+  ["A#"] = 10,
+  Bb = 10,
+  B = 11
+}
+
+
+local function note_to_tidal(note)
+  local name, octave = note:match("([A-G][#b]?)(%d+)")
+  octave = tonumber(octave)
+
+  local pitch = note_map[name]
+  local midi = 12 * (octave + 1) + pitch
+
+  return tostring(midi - 60)
+end
+
+
+vim.keymap.set("n", "<leader>[]", function()
+  local line = vim.api.nvim_get_current_line()
+
+  print("Original line: " .. line)
+
+  local new_line = line:gsub("([A-G][#b]?%d+)", function(note)
+    print("Found note: " .. note)
+    return note_to_tidal(note)
+  end)
+
+  vim.api.nvim_set_current_line(new_line)
+end, { desc = "send block with silence" })
+
+--

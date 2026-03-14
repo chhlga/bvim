@@ -5,7 +5,7 @@ local M = {
   _namespace = vim.api.nvim_create_namespace('sonicpi_line_highlight'),
   _live_loop_map = {},  -- Maps live_loop name -> {bufnr, start_line}
   _last_highlight = nil, -- Track last highlight for cleanup
-  _active_highlights = {},  -- Track all active execution highlights: {bufnr, line}
+  _active_highlights = {},  -- Track execution highlights by live_loop: {live_loop_name = {{bufnr, line}, ...}}
 }
 
 -- Parse error messages for line numbers and live_loop context
@@ -182,11 +182,8 @@ function M.highlight_line(bufnr, line_num, opts)
       line = line_num
     }
   else
-    -- Execution highlight - add to active_highlights
-    table.insert(M._active_highlights, {
-      bufnr = bufnr,
-      line = line_num
-    })
+    -- Execution highlight - will be organized by live_loop in process_execution_message
+    -- Don't track here, let process_execution_message manage it
   end
   
   -- Auto-clear after duration (only for errors)
@@ -198,15 +195,34 @@ function M.highlight_line(bufnr, line_num, opts)
 end
 
 ---Clear all execution highlights
-function M.clear_execution_highlights()
-  for _, hl in ipairs(M._active_highlights) do
-    if vim.api.nvim_buf_is_valid(hl.bufnr) then
-      vim.api.nvim_buf_clear_namespace(hl.bufnr, M._namespace, 0, -1)
+---Clear execution highlights for a specific live_loop
+---@param live_loop string|nil Live loop name (if nil, clears all)
+function M.clear_execution_highlights(live_loop)
+  if live_loop then
+    -- Clear specific live_loop highlights
+    local highlights = M._active_highlights[live_loop]
+    if highlights then
+      for _, hl in ipairs(highlights) do
+        if vim.api.nvim_buf_is_valid(hl.bufnr) then
+          -- Clear only the specific line
+          local line_idx = hl.line - 1
+          vim.api.nvim_buf_clear_namespace(hl.bufnr, M._namespace, line_idx, line_idx + 1)
+        end
+      end
+      M._active_highlights[live_loop] = nil
     end
+  else
+    -- Clear all execution highlights
+    for loop_name, highlights in pairs(M._active_highlights) do
+      for _, hl in ipairs(highlights) do
+        if vim.api.nvim_buf_is_valid(hl.bufnr) then
+          vim.api.nvim_buf_clear_namespace(hl.bufnr, M._namespace, 0, -1)
+        end
+      end
+    end
+    M._active_highlights = {}
   end
-  M._active_highlights = {}
 end
-
 
 -- Process a log message and highlight if it contains error info
 function M.process_log_message(msg_data)
@@ -381,13 +397,25 @@ function M.process_execution_message(msg_data)
     return
   end
   
+  -- Clear previous highlights for this live_loop only
+  M.clear_execution_highlights(parsed.live_loop)
+  
+  -- Track new highlights for this live_loop
+  M._active_highlights[parsed.live_loop] = {}
+  
   -- Highlight all executed lines
   for _, line_info in ipairs(parsed.lines) do
     local absolute_line = loop_info.start_line + line_info.relative_line
     M.highlight_line(loop_info.bufnr, absolute_line, {
       duration = 0  -- Stay highlighted (no auto-clear)
     })
-  end
+    
+    -- Track this highlight
+    table.insert(M._active_highlights[parsed.live_loop], {
+      bufnr = loop_info.bufnr,
+      line = absolute_line
+    })
+end
 end
 
 return M

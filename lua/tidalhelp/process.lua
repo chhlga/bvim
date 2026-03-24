@@ -493,23 +493,107 @@ function M._show_status(status)
   })
 end
 
+local UNICODE_FRACS = {
+  ['½'] = 0.5, ['⅓'] = 1/3, ['⅔'] = 2/3,
+  ['¼'] = 0.25, ['¾'] = 0.75,
+  ['⅕'] = 0.2,  ['⅖'] = 0.4,  ['⅗'] = 0.6,  ['⅘'] = 0.8,
+  ['⅙'] = 1/6,  ['⅚'] = 5/6,
+  ['⅛'] = 0.125,['⅜'] = 0.375,['⅝'] = 0.625,['⅞'] = 0.875,
+}
+
+local function parse_frac(s)
+  if not s or s == '' then return nil end
+  local f = UNICODE_FRACS[s]
+  if f then return f end
+  local n, d = s:match('^(%d+)/(%d+)$')
+  if n then return tonumber(n) / tonumber(d) end
+  return tonumber(s)
+end
+
+local function arc_bar(t0, t1, width)
+  local lo = math.floor(t0 * width + 0.5)
+  local hi = math.floor(t1 * width + 0.5)
+  local bar = {}
+  for i = 1, width do
+    bar[i] = (i > lo and i <= hi) and '█' or '·'
+  end
+  return table.concat(bar)
+end
+
+local function format_arc_lines(raw_lines)
+  local events = {}
+  local max_val = 0
+  for _, l in ipairs(raw_lines) do
+    local s, e, val = l:match('^%((.-)%>(.-)%)|(.*)')
+    if s then
+      local t0 = parse_frac(vim.trim(s))
+      local t1 = parse_frac(vim.trim(e))
+      local v  = vim.trim(val):gsub('^"(.*)"$', '%1')
+      if t0 and t1 then
+        table.insert(events, { t0 = t0, t1 = t1, val = v })
+        if #v > max_val then max_val = #v end
+      end
+    end
+  end
+
+  if #events == 0 then return raw_lines end
+
+  local BAR = 16
+  local out = {}
+  for _, ev in ipairs(events) do
+    local pad = string.rep(' ', max_val - #ev.val)
+    local bar = arc_bar(ev.t0, ev.t1, BAR)
+    table.insert(out, string.format('%s%s  %s', ev.val, pad, bar))
+  end
+  return out
+end
+
 function M._show_evaluate(expr, result_lines)
+  local display = format_arc_lines(result_lines)
+
   local lines = {}
   if expr and expr ~= '' then
-    table.insert(lines, '```haskell')
     table.insert(lines, expr)
-    table.insert(lines, '```')
-    table.insert(lines, '')
+    table.insert(lines, string.rep('─', math.min(#expr + 2, 60)))
   end
-  for _, l in ipairs(result_lines) do
+  for _, l in ipairs(display) do
     table.insert(lines, l)
   end
 
-  vim.lsp.util.open_floating_preview(lines, 'markdown', {
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.bo[buf].modifiable = false
+  vim.bo[buf].bufhidden = 'wipe'
+
+  local width = 0
+  for _, l in ipairs(lines) do
+    if #l > width then width = #l end
+  end
+  width = math.max(width + 2, 30)
+
+  local win_h = math.min(#lines + 2, 20)
+  local win_w = math.min(width, 80)
+  local row = vim.api.nvim_win_get_cursor(0)[1]
+  local screen_row = vim.fn.screenpos(0, row, 1).row
+
+  vim.api.nvim_open_win(buf, false, {
+    relative = 'cursor',
+    row = 1,
+    col = 0,
+    width = win_w,
+    height = win_h,
+    style = 'minimal',
     border = 'rounded',
-    max_width = 100,
-    max_height = 30,
+    focusable = false,
   })
+
+  vim.api.nvim_buf_set_keymap(buf, 'n', 'q', '<cmd>close<cr>', { noremap = true, silent = true })
+
+  vim.defer_fn(function()
+    if vim.api.nvim_buf_is_valid(buf) then
+      pcall(vim.api.nvim_buf_delete, buf, { force = true })
+    end
+  end, 8000)
 end
 
 ---Check if tidalhelp is running

@@ -573,10 +573,8 @@ function M._show_evaluate(expr, result_lines)
 
   local win_h = math.min(#lines + 2, 20)
   local win_w = math.min(width, 80)
-  local row = vim.api.nvim_win_get_cursor(0)[1]
-  local screen_row = vim.fn.screenpos(0, row, 1).row
 
-  vim.api.nvim_open_win(buf, false, {
+  local win = vim.api.nvim_open_win(buf, false, {
     relative = 'cursor',
     row = 1,
     col = 0,
@@ -587,13 +585,11 @@ function M._show_evaluate(expr, result_lines)
     focusable = false,
   })
 
-  vim.api.nvim_buf_set_keymap(buf, 'n', 'q', '<cmd>close<cr>', { noremap = true, silent = true })
-
   vim.defer_fn(function()
-    if vim.api.nvim_buf_is_valid(buf) then
-      pcall(vim.api.nvim_buf_delete, buf, { force = true })
+    if vim.api.nvim_win_is_valid(win) then
+      vim.api.nvim_win_close(win, true)
     end
-  end, 8000)
+  end, 6000)
 end
 
 ---Check if tidalhelp is running

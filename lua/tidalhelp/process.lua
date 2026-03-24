@@ -548,7 +548,14 @@ local function format_arc_lines(raw_lines)
   return out
 end
 
+M._eval_win = nil
+
 function M._show_evaluate(expr, result_lines)
+  if M._eval_win and vim.api.nvim_win_is_valid(M._eval_win) then
+    vim.api.nvim_win_close(M._eval_win, true)
+    M._eval_win = nil
+  end
+
   local display = format_arc_lines(result_lines)
 
   local lines = {}
@@ -584,10 +591,12 @@ function M._show_evaluate(expr, result_lines)
     border = 'rounded',
     focusable = false,
   })
+  M._eval_win = win
 
   vim.defer_fn(function()
-    if vim.api.nvim_win_is_valid(win) then
+    if M._eval_win == win and vim.api.nvim_win_is_valid(win) then
       vim.api.nvim_win_close(win, true)
+      M._eval_win = nil
     end
   end, 6000)
 end

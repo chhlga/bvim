@@ -411,6 +411,10 @@ function M._handle_response(line)
   elseif response.type == 'error' then
     vim.notify('TidalHelp: ' .. (response.error or 'Unknown error'), vim.log.levels.ERROR)
   elseif response.type == 'analysis' then
+  elseif response.type == 'evaluate' then
+    if response.result then
+      M._show_evaluate(response.expr or '', response.result)
+    end
   elseif response.type == 'success' then
   elseif response.type == 'status' then
     M._show_status(response)
@@ -486,6 +490,25 @@ function M._show_status(status)
     border = 'rounded',
     max_width = 60,
     max_height = 20,
+  })
+end
+
+function M._show_evaluate(expr, result_lines)
+  local lines = {}
+  if expr and expr ~= '' then
+    table.insert(lines, '```haskell')
+    table.insert(lines, expr)
+    table.insert(lines, '```')
+    table.insert(lines, '')
+  end
+  for _, l in ipairs(result_lines) do
+    table.insert(lines, l)
+  end
+
+  vim.lsp.util.open_floating_preview(lines, 'markdown', {
+    border = 'rounded',
+    max_width = 100,
+    max_height = 30,
   })
 end
 

@@ -109,6 +109,10 @@ function M.update_cursor_hint(bufnr)
 
   if not hint_text then return end
 
+  if #hint_text > 80 then
+    hint_text = hint_text:sub(1, 77) .. '…'
+  end
+
   local ok, mark_id = pcall(vim.api.nvim_buf_set_extmark, bufnr, ns, lnum, 0, {
     virt_text = { { '  → ' .. hint_text, 'TidalCursorHint' } },
     virt_text_pos = 'eol',

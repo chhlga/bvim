@@ -137,6 +137,12 @@ function M._setup_keymaps()
     desc = 'TidalHelp: Show hint',
   })
 
+  -- Alt+p: evaluate expression under cursor
+  vim.keymap.set({'n', 'i'}, '<M-p>', M.evaluate, {
+    buffer = bufnr,
+    desc = 'TidalHelp: Evaluate expression',
+  })
+
   -- Silence pattern under cursor (Alt+Backspace)
   vim.keymap.set({'n', 'i'}, '<M-BS>', M.silence_pattern, {
     buffer = bufnr,
@@ -228,6 +234,15 @@ end
 ---Show tidalhelp status
 function M.status()
   process.send('status')
+end
+
+function M.evaluate()
+  local filepath = vim.api.nvim_buf_get_name(0)
+  if filepath == '' then return end
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local lnum = cursor[1]
+  local col  = cursor[2]
+  process.send(string.format('evaluate %s:%d:%d', filepath, lnum, col))
 end
 
 ---Request completions (async, used by cmp source)

@@ -551,11 +551,6 @@ end
 M._eval_win = nil
 
 function M._show_evaluate(expr, result_lines)
-  if M._eval_win and vim.api.nvim_win_is_valid(M._eval_win) then
-    vim.api.nvim_win_close(M._eval_win, true)
-    M._eval_win = nil
-  end
-
   local display = format_arc_lines(result_lines)
 
   local lines = {}
@@ -567,38 +562,13 @@ function M._show_evaluate(expr, result_lines)
     table.insert(lines, l)
   end
 
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  vim.bo[buf].modifiable = false
-  vim.bo[buf].bufhidden = 'wipe'
-
-  local width = 0
-  for _, l in ipairs(lines) do
-    if #l > width then width = #l end
-  end
-  width = math.max(width + 2, 30)
-
-  local win_h = math.min(#lines + 2, 20)
-  local win_w = math.min(width, 80)
-
-  local win = vim.api.nvim_open_win(buf, false, {
-    relative = 'cursor',
-    row = 1,
-    col = 0,
-    width = win_w,
-    height = win_h,
-    style = 'minimal',
+  vim.lsp.util.open_floating_preview(lines, '', {
     border = 'rounded',
-    focusable = false,
+    max_width = 80,
+    max_height = 20,
+    focus = false,
+    close_events = { 'CursorMoved', 'CursorMovedI', 'InsertEnter', 'BufLeave' },
   })
-  M._eval_win = win
-
-  vim.defer_fn(function()
-    if M._eval_win == win and vim.api.nvim_win_is_valid(win) then
-      vim.api.nvim_win_close(win, true)
-      M._eval_win = nil
-    end
-  end, 6000)
 end
 
 ---Check if tidalhelp is running

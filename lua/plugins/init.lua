@@ -688,19 +688,18 @@ return {
   --     })
   --   end,
   -- },
-  {
-    "grddavies/tidal.nvim",
-    opts = {
-      mappings = {
-        send_line = { mode = { "i", "n" }, key = "<M-CR>" },
-        send_visual = { mode = { "x" }, key = "<M-CR>" },
-        send_node = { mode = "n", key = "<leader><CR>" },
-        send_hush = { mode = "n", key = "<leader><Esc>" },
-      },
-      -- Your configuration here
-      -- See configuration section for defaults
-    },
-  },
+  -- tidal.nvim replaced by tidalhelp (our own plugin)
+  -- {
+  --   "grddavies/tidal.nvim",
+  --   opts = {
+  --     mappings = {
+  --       send_line = { mode = { "i", "n" }, key = "<M-CR>" },
+  --       send_visual = { mode = { "x" }, key = "<M-CR>" },
+  --       send_node = { mode = "n", key = "<leader><CR>" },
+  --       send_hush = { mode = "n", key = "<leader><Esc>" },
+  --     },
+  --   },
+  -- },
   {
     "tpope/vim-repeat",
     event = "VeryLazy",

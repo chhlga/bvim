@@ -68,11 +68,19 @@ return {
     },
 
     sources = {
-      default = { 'lsp', 'path', 'snippets', 'buffer', 'copilot', 'sonicpi' },
+      default = { 'lsp', 'path', 'snippets', 'buffer', 'copilot', 'sonicpi', 'tidalhelp' },
+      per_filetype = {
+        tidal = { 'lsp', 'buffer', 'snippets' },
+      },
       providers = { -- name of cmp source
         sonicpi = {
           name = "sonicpi",
           module = "blink.compat.source",
+        },
+        tidalhelp = {
+          name = "tidalhelp",
+          module = "blink.compat.source",
+          async = true,
         },
         copilot = {
           name = "copilot",

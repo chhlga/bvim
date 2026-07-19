@@ -461,7 +461,7 @@ endfunction
   { "<leader>eb",  "<cmd>Neotree focus buffers left<CR>",                                    desc = "Focus Buffers" },
   { "<leader>eg",  "<cmd>Neotree focus git_status left<CR>",                                 desc = "Focus Git" },
   { "<leader>es",  "<cmd>Neotree focus document_symbols left<CR>",                           desc = "Focus Symbols" },
-  { "<leader>en",  "<C-w>w",                                                                 desc = "Cycle windows" },
+  { "<leader>en",  "<C-w>w",                 desc = "Cycle windows" },
   { "<leader>et",  function() Snacks.terminal() end,                                         desc = "Toggle Terminal" },
 
   { "<leader>q",   group = "Session" },
@@ -688,70 +688,3 @@ vim.keymap.set('n', '<leader>rr', function()
   local row = vim.api.nvim_win_get_cursor(0)[1]
   vim.api.nvim_buf_set_lines(0, row, row + 1, false, { "return" })
 end, { desc = "Insert return statement" })
-
-vim.keymap.set("n", "<leader>[", function()
-  local select = require("tidal.util.select")
-  local block = select.get_block()
-  -- local block_start = block.start[1] + 1
-
-  local channel_number = string.match(block.lines[1], "d(%d+)")
-
-  local message = require("tidal.core.message")
-
-  if channel_number then
-    message.tidal.send_line(string.format("d%d silence", channel_number))
-  else
-    require('tidal').api.send_silence()
-  end
-end, { desc = "send silence" })
-
-vim.keymap.set("n", "<leader>]", function()
-  require('tidal').api.send_block()
-end, { desc = "send block" })
-
-local note_map = {
-  C = 0,
-  ["C#"] = 1,
-  Db = 1,
-  D = 2,
-  ["D#"] = 3,
-  Eb = 3,
-  E = 4,
-  F = 5,
-  ["F#"] = 6,
-  Gb = 6,
-  G = 7,
-  ["G#"] = 8,
-  Ab = 8,
-  A = 9,
-  ["A#"] = 10,
-  Bb = 10,
-  B = 11
-}
-
-
-local function note_to_tidal(note)
-  local name, octave = note:match("([A-G][#b]?)(%d+)")
-  octave = tonumber(octave)
-
-  local pitch = note_map[name]
-  local midi = 12 * (octave + 1) + pitch
-
-  return tostring(midi - 60)
-end
-
-
-vim.keymap.set("n", "<leader>[]", function()
-  local line = vim.api.nvim_get_current_line()
-
-  print("Original line: " .. line)
-
-  local new_line = line:gsub("([A-G][#b]?%d+)", function(note)
-    print("Found note: " .. note)
-    return note_to_tidal(note)
-  end)
-
-  vim.api.nvim_set_current_line(new_line)
-end, { desc = "send block with silence" })
-
---
